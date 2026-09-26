@@ -76,10 +76,21 @@ class Clash2SfaApp extends HTMLElement {
         this.fetchProgress = this.querySelector('[data-ref="in-fetch"]');
         this.newSub = this.querySelector('[data-ref="new-sub"]');
         this.convert = this.querySelector('[data-ref="convert"]');
+        this.sourceFile = this.querySelector('[data-ref="source-file"]');
+        this.sourceContent = this.querySelector('[data-ref="source-content"]');
+        this.convertContent = this.querySelector('[data-ref="convert-content"]');
+        this.contentProgress = this.querySelector('[data-ref="content-progress"]');
+        this.convertResult = this.querySelector('[data-ref="convert-result"]');
+        this.resultLabel = this.querySelector('[data-ref="result-label"]');
+        this.downloadResult = this.querySelector('[data-ref="download-result"]');
+        this.resultObjectURL = null;
 
         this.abortController = new AbortController();
         const { signal } = this.abortController;
         this.convert.addEventListener("click", this.handleClick, { signal });
+        this.convertContent.addEventListener("click", this.handleContentConvert, { signal });
+        this.sourceFile.addEventListener("change", this.handleFileChange, { signal });
+        this.downloadResult.addEventListener("click", this.handleDownload, { signal });
         this.configType.addEventListener("change", this.onConfigTypeChange, { signal });
         document.addEventListener("paste", this.handlePaste, { signal });
 
@@ -91,6 +102,7 @@ class Clash2SfaApp extends HTMLElement {
         if (!this.initialized) return;
         this.abortController?.abort();
         this.abortController = null;
+        if (this.resultObjectURL) URL.revokeObjectURL(this.resultObjectURL);
         this.initialized = false;
     }
 
@@ -168,6 +180,58 @@ class Clash2SfaApp extends HTMLElement {
         } finally {
             this.setFetching(false);
         }
+    };
+
+    handleFileChange = async () => {
+        const file = this.sourceFile.files?.[0];
+        if (!file) return;
+        if (file.size > 10 * 1000 * 1000) {
+            alert("配置文件不能超过 10 MB");
+            this.sourceFile.value = "";
+            return;
+        }
+        this.sourceContent.value = await file.text();
+    };
+
+    handleContentConvert = async () => {
+        const content = this.sourceContent.value.trim();
+        if (!content || !this.contentProgress.hidden) return;
+        this.convertContent.hidden = true;
+        this.contentProgress.hidden = false;
+        this.convertResult.hidden = true;
+        this.resultLabel.hidden = true;
+        this.downloadResult.hidden = true;
+        try {
+            const url = new URL(await this.saveParameter());
+            url.pathname = "/convert";
+            url.searchParams.delete("sub");
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "text/yaml; charset=utf-8" },
+                body: content,
+            });
+            const result = await response.text();
+            if (!response.ok) throw new Error(result || `HTTP ${response.status}`);
+            this.convertResult.value = result;
+            this.convertResult.hidden = false;
+            this.resultLabel.hidden = false;
+            this.downloadResult.hidden = false;
+            this.convertResult.scrollIntoView({ behavior: "smooth", block: "start" });
+        } catch (error) {
+            alert("转换失败：" + String(error));
+        } finally {
+            this.convertContent.hidden = false;
+            this.contentProgress.hidden = true;
+        }
+    };
+
+    handleDownload = () => {
+        if (this.resultObjectURL) URL.revokeObjectURL(this.resultObjectURL);
+        this.resultObjectURL = URL.createObjectURL(new Blob([this.convertResult.value], { type: "application/json" }));
+        const link = document.createElement("a");
+        link.href = this.resultObjectURL;
+        link.download = "sing-box.json";
+        link.click();
     };
 
     handlePaste = async (event) => {

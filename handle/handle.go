@@ -42,9 +42,28 @@ func Frontend(frontendByte []byte) http.HandlerFunc {
 // ua 非空时抓取订阅与远程模板改用该 User-Agent；
 // addTag / disableUrlTest 为 "true" 时生效；outFields 为 "1" / "0" 时强制开启 / 关闭 block 与 dns-out 的生成。
 func (h *Handle) Sub(w http.ResponseWriter, r *http.Request) {
+	h.convertRequest(w, r, nil)
+}
+
+// ConvertContent 接收 Clash YAML 配置文本并直接转换为 sing-box JSON。
+func (h *Handle) ConvertContent(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxDecompressedConfig)
+	content, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "配置文件读取失败或超过 10 MB", http.StatusRequestEntityTooLarge)
+		return
+	}
+	if len(bytes.TrimSpace(content)) == 0 {
+		http.Error(w, "配置文件内容不得为空", http.StatusBadRequest)
+		return
+	}
+	h.convertRequest(w, r, content)
+}
+
+func (h *Handle) convertRequest(w http.ResponseWriter, r *http.Request, content []byte) {
 	ctx := r.Context()
 	sub := r.FormValue("sub")
-	if sub == "" {
+	if sub == "" && len(content) == 0 {
 		h.l.DebugContext(ctx, "sub 不得为空")
 		http.Error(w, "sub 不得为空", http.StatusBadRequest)
 		return
@@ -53,6 +72,7 @@ func (h *Handle) Sub(w http.ResponseWriter, r *http.Request) {
 	ver := utils.GetSingBoxVersion(r)
 	arg := model.ConvertArg{
 		Sub:            sub,
+		SubContent:     content,
 		Include:        r.FormValue("include"),
 		Exclude:        r.FormValue("exclude"),
 		ConfigUrl:      r.FormValue("configurl"),

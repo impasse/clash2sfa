@@ -42,6 +42,17 @@
             <p>将 clash 格式的订阅链接转换为 sing-box 的工具，转换后的链接可用于 <a href="https://sing-box.sagernet.org/clients/">SFA</a>。</p>
             <p>在此页面粘贴由本工具生成的订阅链接（仅参数保存在链接内可用），可解析到下面的选项中</p>
             <input data-ref="sub" placeholder="订阅链接，多个链接使用 | 分割" />
+            <details open>
+                <summary>上传或粘贴 Clash 配置文件并转换</summary>
+                <p>支持 Clash.Meta YAML 配置。选择本地文件，或直接粘贴配置内容（最大 10 MB）。</p>
+                <input data-ref="source-file" type="file" accept=".yaml,.yml,.json,.txt,application/yaml,text/yaml,application/json,text/plain" />
+                <textarea data-ref="source-content" placeholder="在此粘贴 Clash 配置文件内容" style="resize: vertical; min-height: 18em;"></textarea>
+                <button data-ref="convert-content" type="button" style="width: 100%;">转换配置文件</button>
+                <progress data-ref="content-progress" hidden></progress>
+                <label data-ref="result-label" hidden for="convert-result">转换结果</label>
+                <textarea data-ref="convert-result" readonly hidden style="resize: vertical; min-height: 18em;"></textarea>
+                <button data-ref="download-result" type="button" hidden class="secondary">下载 sing-box 配置</button>
+            </details>
             <div class="grid">
                 <input data-ref="include" placeholder="url test 中包含的节点名（可用正则）" />
                 <input data-ref="exclude" placeholder="url test 中排除的节点名（可用正则）" />

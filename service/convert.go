@@ -11,7 +11,9 @@ import (
 	"github.com/xmdhs/clash2sfa/model"
 	"github.com/xmdhs/clash2singbox/convert"
 	"github.com/xmdhs/clash2singbox/httputils"
+	"github.com/xmdhs/clash2singbox/model/clash"
 	"github.com/xmdhs/clash2singbox/model/singbox"
+	"gopkg.in/yaml.v3"
 )
 
 var ErrFormat = errors.New("错误的格式")
@@ -19,9 +21,22 @@ var ErrFormat = errors.New("错误的格式")
 // convert 抓取订阅、转换节点并合并进模板。返回打好补丁的配置，以及所有可被分组引用的节点 tag（含可见性），
 // 供 configUrlTestParser 展开模板分组里的 include: / exclude: 指令。
 func (c *Convert) convert(ctx context.Context, arg model.ConvertArg) (map[string]any, []TagWithVisible, error) {
-	clashCfg, singNodes, singTags, err := httputils.GetAny(ctx, c.c, arg.Sub, arg.AddTag)
-	if err != nil {
-		return nil, nil, fmt.Errorf("convert: %w", err)
+	var clashCfg clash.Clash
+	var singNodes []map[string]any
+	var singTags []string
+	if len(arg.SubContent) > 0 {
+		if err := yaml.Unmarshal(arg.SubContent, &clashCfg); err != nil {
+			return nil, nil, fmt.Errorf("convert: %w: %v", ErrFormat, err)
+		}
+		if len(clashCfg.Proxies) == 0 {
+			return nil, nil, fmt.Errorf("convert: %w: 配置中没有可转换的 proxies", ErrFormat)
+		}
+	} else {
+		var err error
+		clashCfg, singNodes, singTags, err = httputils.GetAny(ctx, c.c, arg.Sub, arg.AddTag)
+		if err != nil {
+			return nil, nil, fmt.Errorf("convert: %w", err)
+		}
 	}
 	config, err := decodeConfig(arg.Config)
 	if err != nil {

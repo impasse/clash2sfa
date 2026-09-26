@@ -6,6 +6,7 @@ import (
 
 type ConvertArg struct {
 	Sub            string
+	SubContent     []byte
 	Include        string
 	Exclude        string
 	Config         []byte

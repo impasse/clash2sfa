@@ -10,6 +10,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	github.com/tidwall/jsonc v0.3.3
 	github.com/xmdhs/clash2singbox v0.2.1-0.20260907044029-b9cc86ef2299
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -21,5 +22,4 @@ require (
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

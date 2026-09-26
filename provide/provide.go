@@ -87,6 +87,7 @@ func newMux(c *http.Client, l *slog.Logger) *chi.Mux {
 	mux.Use(newStructuredLogger(l))
 
 	mux.Get("/sub", subH.Sub)
+	mux.Post("/convert", subH.ConvertContent)
 	mux.With(Cache).Mount("/config", http.StripPrefix("/config", http.FileServerFS(staticFS)))
 	mux.With(Cache).Mount("/static", http.StripPrefix("/static", http.FileServerFS(staticFS)))
 	mux.With(Cache).HandleFunc("/", handle.Frontend(renderIndex()))
